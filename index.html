@@ -1,0 +1,531 @@
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>⚡ محطة راديو الأرقام والاتصال الصوتي المشفر ⚡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', 'Share Tech Mono', monospace;
+            background-color: #010a04;
+            color: #22c55e;
+            overflow-x: hidden;
+        }
+        .scanlines::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 50, 0, 0.12) 50%);
+            z-index: 50;
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+        .terminal-box {
+            background-color: #000000;
+            border: 1px solid #166534;
+            box-shadow: inset 0 0 12px rgba(22, 101, 52, 0.25);
+            border-radius: 6px;
+        }
+        .glow-green {
+            text-shadow: 0 0 10px rgba(34, 197, 94, 0.85);
+        }
+        .glow-red {
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.85);
+        }
+        input, textarea {
+            background: transparent;
+            border: none;
+            color: #4ade80;
+            outline: none;
+        }
+        input::placeholder, textarea::placeholder {
+            color: #14532d;
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #166534; border-radius: 2px; }
+    </style>
+</head>
+<body class="min-h-screen p-2 md:p-4 flex flex-col justify-between scanlines select-none relative bg-black">
+
+    <!-- 📺 الشاشة العلوية: مراقب وراديو الأرقام السرية -->
+    <header class="w-full max-w-lg mx-auto bg-zinc-950 border border-green-950 rounded-xl p-3 flex flex-col gap-2 shadow-2xl">
+        <div class="flex justify-between items-center border-b border-green-900 pb-2">
+            <div class="flex flex-col">
+                <h1 class="text-lg font-black text-green-500 glow-green flex items-center gap-1.5">
+                    📡 محطة راديو الأرقام السرية
+                </h1>
+                <span class="text-[8px] text-green-700 font-mono tracking-widest uppercase">
+                    MILITARY NUMBERS RADIO SYSTEM // BIPARTITE DECODER
+                </span>
+            </div>
+            <div class="flex items-center gap-2 bg-black px-2 py-1 rounded border border-green-950 text-[10px] font-mono">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping"></span>
+                <span class="text-green-500">MONITOR ACTIVE</span>
+            </div>
+        </div>
+
+        <!-- أجهزة التحكم التناظرية والتردد -->
+        <div class="grid grid-cols-12 gap-2 items-center bg-black/80 p-2 rounded border border-green-900">
+            <div class="col-span-6 flex flex-col">
+                <span class="text-[8px] text-zinc-500 font-mono">Mhz التردد</span>
+                <input id="wave-input" type="number" step="0.005" value="6.773" class="w-full text-center font-mono text-yellow-400 font-black text-lg bg-zinc-950 border border-green-950 rounded py-0.5" oninput="changeWaveFrequency(this.value)">
+            </div>
+            <div class="col-span-6 flex flex-col gap-1">
+                <button id="static-btn" onclick="toggleRadioStatic()" class="w-full bg-green-900 hover:bg-green-800 text-black font-black text-[10px] py-1.5 rounded transition-colors uppercase">
+                    كتم الراديو 🔇
+                </button>
+            </div>
+        </div>
+
+        <!-- 🌊 مرصد الذبذبات التناظري التفاعلي الحقيقي (Oscilloscope) -->
+        <div class="relative bg-black border border-green-950 rounded h-20 overflow-hidden">
+            <div class="absolute top-1 right-2 text-[7px] font-mono text-green-700/80 uppercase">MONITOR OSCILLOSCOPE // مراقب الإشارة التناظرية</div>
+            <canvas id="oscilloscope" class="w-full h-full block mt-2"></canvas>
+        </div>
+    </header>
+
+    <!-- ⚙️ لوحة التشفير وتحليل النصوص ثنائي القناة -->
+    <main class="w-full max-w-lg mx-auto flex-grow flex flex-col gap-3 my-1">
+        
+        <div class="grid grid-cols-2 gap-3">
+            <!-- المدخل العربي العادي -->
+            <div class="terminal-box p-2.5 flex flex-col h-32 justify-between">
+                <div class="flex justify-between items-center border-b border-green-900 pb-1 text-[9px]">
+                    <span class="font-bold text-green-500">✍️ المدخل العربي العادي</span>
+                    <span class="font-mono text-green-700">ARABIC</span>
+                </div>
+                <textarea id="normal-input" rows="2" placeholder="اكتب هنا..." class="w-full resize-none text-xs font-bold leading-relaxed flex-grow mt-1" oninput="autoProcessCrypto()"></textarea>
+                <button onclick="clearText()" class="self-start text-[8px] text-green-600 border border-green-950 px-2 rounded hover:bg-green-950">مسح</button>
+            </div>
+
+            <!-- لغة الأرقام الاستخباراتية -->
+            <div class="terminal-box p-2.5 flex flex-col h-32 justify-between">
+                <div class="flex justify-between items-center border-b border-green-900 pb-1 text-[9px]">
+                    <span class="font-bold text-yellow-500">🔑 لغة الأرقام الاستخباراتية</span>
+                    <span class="font-mono text-yellow-700">CIPHER NUMBERS</span>
+                </div>
+                <div id="num-cipher-out" class="w-full text-center text-yellow-400 font-mono text-xs tracking-widest break-all font-bold my-auto">000</div>
+                <div class="text-[8px] font-mono text-cyan-600 truncate border-t border-zinc-950 pt-1">
+                    MORSE: <span id="morse-cipher-out" class="text-cyan-400">/</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- دردشة Bit Chat وسجل الإشارات اللاسلكية اللامركزية -->
+        <div class="terminal-box p-2.5 flex flex-col flex-grow min-h-[140px]">
+            <div class="flex justify-between items-center border-b border-green-900 pb-1 text-[9px] mb-1.5 font-mono">
+                <span class="text-green-500 font-bold">💬 سجل الإشارات والعمليات // SYSTEM LOGS</span>
+                <span id="user-tag" class="text-blue-400">anon6136@mesh</span>
+            </div>
+            <div id="chat-box" class="flex-grow overflow-y-auto space-y-1.5 text-[9px] font-mono text-green-400">
+                <div class="text-green-700 text-center">-- بوابات شبكة الميش الصوتية آمنة وبدون اتصال --</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 🎙️ لوحة التحكم التكتيكية: نظام المكالمات والتشويش والصوت المشفر -->
+    <footer class="w-full max-w-lg mx-auto bg-zinc-950 border border-green-950 rounded-xl p-3 flex flex-col gap-2.5 shadow-2xl">
+        
+        <!-- مفاتيح أوضاع الصوت والمكالمة المشفرة -->
+        <div class="grid grid-cols-2 gap-2 bg-black p-1.5 rounded border border-green-950">
+            <button id="mode-normal-btn" onclick="setVoiceMode('normal')" class="bg-green-900 text-black font-black text-[9px] py-1.5 rounded transition-all uppercase tracking-wider text-center">
+                🎤 مكالمة صوتية طبيعية
+            </button>
+            <button id="mode-scrambler-btn" onclick="setVoiceMode('scrambler')" class="bg-black text-green-500 border border-green-900 font-black text-[9px] py-1.5 rounded transition-all uppercase tracking-wider text-center">
+                🔏 مكالمة مشفرة عسكرياً
+            </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- زر المايك للتحدث اللاسلكي المباشر (PTT Walkie-Talkie) -->
+            <button onmousedown="startVoiceTransmission()" onmouseup="stopVoiceTransmission()" ontouchstart="startVoiceTransmission()" ontouchend="stopVoiceTransmission()" class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-black font-black text-xl shadow-[0_0_15px_rgba(22,163,74,0.6)] active:bg-green-400 active:scale-95 transition-all shrink-0 border-2 border-green-800">
+                ⚡
+            </button>
+
+            <!-- حقل الكتابة والبث النصي السريع -->
+            <div class="flex-grow flex border border-green-900 rounded-lg overflow-hidden h-10">
+                <input id="chat-input" type="text" placeholder="اكتب رسالة لبثها لاسلكياً عبر الميش..." class="w-full bg-black px-3 text-xs text-green-300 placeholder-green-800" onkeydown="if(event.key === 'Enter') sendMeshMessage()">
+                <button onclick="sendMeshMessage()" class="bg-green-900 hover:bg-green-800 text-black px-4 font-bold text-[10px] uppercase transition-colors">بث</button>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center text-[8px] text-zinc-600 font-mono px-1">
+            <span>OFFLINE ACOUSTIC MODEM ACTIVE</span>
+            <span>PTT CONTROL SYSTEM v5.2</span>
+        </div>
+    </footer>
+
+    <!-- الإشعارات المنبثقة للعمليات -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-black border border-green-500 text-green-400 text-[9px] font-mono px-4 py-2 rounded shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50">
+        تنبيه النظام
+    </div>
+
+    <!-- الهندسة الصوتية والبرمجية الذكية للاتصال الصوتي المباشر والتشويش والترميز -->
+    <script>
+        // مصفوفات التشفير والترجمة التلقائية
+        const arMap = { 'أ':14,'ا':14,'ب':39,'ت':75,'ة':75,'ث':22,'ج':91,'ح':47,'خ':18,'د':85,'ذ':40,'ر':62,'ز':11,'س':88,'ش':53,'ص':31,'ض':70,'ط':59,'ظ':26,'ع':44,'غ':93,'ف':21,'ق':67,'ك':82,'ل':19,'م':33,'ن':56,'ه':8,'و':97,'ي':50,'ى':50,' ': '000' };
+        const morseMap = { 'ا': '.-', 'ب': '-...', 'ت': '-', 'ث': '-.-.', 'ج': '.---', 'ح': '....', 'خ': '---', 'د': '-..', 'ذ': '--..', 'ر': '.-.', 'ز': '---.', 'س': '...', 'ش': '----', 'ص': '-..-', 'ض': '...-', 'ط': '..-', 'ظ': '-.--', 'ع': '.-.-', 'غ': '..-.', 'ف': '..-.', 'ق': '--.-', 'ك': '-.-', 'ل': '.-..', 'م': '--', 'ن': '-.', 'ه': '....', 'و': '.--', 'ي': '..---',' ': '/' };
+
+        document.getElementById('user-tag').textContent = `anon${Math.floor(1000 + Math.random() * 9000)}@mesh`;
+
+        // متغيرات معالجة الإشارات اللاسلكية والصوت
+        let audioCtx = null;
+        let staticSource = null;
+        let staticGain = null;
+        let filterNode = null;
+        let isStaticPlaying = false;
+
+        // متغيرات الميكروفون المباشر والتشويه الصوتي (Voice Scrambler)
+        let micStream = null;
+        let micSourceNode = null;
+        let scramblerOsc = null;
+        let scramblerGain = null;
+        let micAnalyser = null;
+        let activeVoiceMode = "normal"; // normal or scrambler
+        let isTransmittingVoice = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // تشغيل صوت التشويش اللاسلكي الحقيقي
+        function setupRadioStatic() {
+            const bufferSize = 2 * audioCtx.sampleRate;
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+
+            staticSource = audioCtx.createBufferSource();
+            staticSource.buffer = noiseBuffer;
+            staticSource.loop = true;
+
+            filterNode = audioCtx.createBiquadFilter();
+            filterNode.type = 'bandpass';
+            filterNode.Q.value = 3.5;
+            
+            changeWaveFrequency(document.getElementById('wave-input').value);
+
+            staticGain = audioCtx.createGain();
+            staticGain.gain.setValueAtTime(0, audioCtx.currentTime);
+
+            staticSource.connect(filterNode);
+            filterNode.connect(staticGain);
+            
+            // ربط التشويش بمكبر الصوت ومحلل الذبذبات
+            staticGain.connect(audioCtx.destination);
+            staticSource.start();
+        }
+
+        function toggleRadioStatic() {
+            initAudio();
+            if (!staticSource) setupRadioStatic();
+
+            const btn = document.getElementById('static-btn');
+            if (!isStaticPlaying) {
+                isStaticPlaying = true;
+                btn.textContent = "كتم الراديو 🔇";
+                btn.className = "w-full bg-green-900 hover:bg-green-800 text-black font-black text-[10px] py-1.5 rounded transition-colors uppercase";
+                staticGain.gain.setTargetAtTime(0.015, audioCtx.currentTime, 0.1);
+                logSystem(`[النظام] تم تفعيل موجة التشويش التناظرية.`);
+            } else {
+                isStaticPlaying = false;
+                btn.textContent = "تشغيل الراديو 🔊";
+                btn.className = "w-full bg-black border border-green-800 text-green-500 hover:bg-green-900 text-[10px] font-black py-1.5 rounded transition-colors uppercase";
+                staticGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                logSystem(`[النظام] تم كتم الصوت التناظري.`);
+            }
+        }
+
+        function changeWaveFrequency(val) {
+            initAudio();
+            const mhz = parseFloat(val) || 6.773;
+            // معادلة تحويل التردد اللاسلكي الافتراضي لتردد صوتي حقيقي ومحاكاته
+            const hz = Math.min(Math.max(mhz * 150, 200), 6000);
+            if (filterNode) {
+                filterNode.frequency.setTargetAtTime(hz, audioCtx.currentTime, 0.15);
+            }
+            playBeepTone(800, 0.04);
+        }
+
+        function playBeepTone(freq, duration, delay = 0) {
+            initAudio();
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(audioCtx.currentTime + delay);
+                osc.stop(audioCtx.currentTime + delay + duration);
+            } catch(e){}
+        }
+
+        // --- تبديل أوضاع التحدث المباشر ---
+        function setVoiceMode(mode) {
+            activeVoiceMode = mode;
+            const normBtn = document.getElementById('mode-normal-btn');
+            const scramBtn = document.getElementById('mode-scrambler-btn');
+
+            if (mode === 'normal') {
+                normBtn.className = "bg-green-900 text-black font-black text-[9px] py-1.5 rounded transition-all uppercase tracking-wider text-center";
+                scramBtn.className = "bg-black text-green-500 border border-green-900 font-black text-[9px] py-1.5 rounded transition-all uppercase tracking-wider text-center";
+                showToast("🎤 وضع المكالمة المباشرة: طبيعي");
+            } else {
+                scramBtn.className = "bg-red-950 text-red-400 border border-red-800 font-black text-[9px] py-1.5 rounded transition-all uppercase tracking-wider text-center glow-red";
+                normBtn.className = "bg-black text-green-500 border border-green-900 font-black text-[9px] py-1.5 rounded transition-all uppercase tracking-wider text-center";
+                showToast("🔏 وضع التحدث التكتيكي: مشفر ومشوّش عسكرياً");
+            }
+        }
+
+        // --- 🎙️ بدء الإرسال اللاسلكي الصوتي المباشر والربط بالأوسيلوسكوب ---
+        function startVoiceTransmission() {
+            initAudio();
+            isTransmittingVoice = true;
+
+            // كتم صوت التشويش مؤقتاً أثناء التحدث لمنع الارتداد الصوتي
+            if (staticGain && isStaticPlaying) {
+                staticGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            }
+
+            navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+            .then(stream => {
+                micStream = stream;
+                micSourceNode = audioCtx.createMediaStreamSource(stream);
+
+                // إنشاء محلل الذبذبات المباشر لعرض خط الراديو المتعرج المباشر!
+                micAnalyser = audioCtx.createAnalyser();
+                micAnalyser.fftSize = 512;
+                micSourceNode.connect(micAnalyser);
+
+                if (activeVoiceMode === "normal") {
+                    // 1. الوضع الطبيعي: نمرر صوت المايك للسماعة مباشرة مع بيب الإقلاع
+                    playBeepTone(1100, 0.1);
+                    setTimeout(() => {
+                        if (isTransmittingVoice) {
+                            micSourceNode.connect(audioCtx.destination);
+                            logSystem(`[تحدث مباشر] إرسال صوتي نقي ومفتوح...`, 'text-green-400');
+                        }
+                    }, 120);
+                } else {
+                    // 2. وضع التشفير التجسسي الحقيقي (Ring Modulation Voice Scrambler):
+                    // نقوم بضرب تردد المايك بمذبذب عالي لترميزه وجعله مشفر غامض وغير مفهوم!
+                    playBeepTone(400, 0.08);
+                    playBeepTone(700, 0.08, 0.08);
+
+                    setTimeout(() => {
+                        if (isTransmittingVoice) {
+                            scramblerOsc = audioCtx.createOscillator();
+                            scramblerGain = audioCtx.createGain();
+
+                            scramblerOsc.type = "sine";
+                            scramblerOsc.frequency.setValueAtTime(950, audioCtx.currentTime); // تردد التشفير المشوه
+
+                            // ضرب إشارة المايك بالمذبذب
+                            const ringGain = audioCtx.createGain();
+                            micSourceNode.connect(ringGain);
+                            
+                            scramblerOsc.connect(ringGain.gain);
+                            ringGain.connect(audioCtx.destination);
+
+                            scramblerOsc.start();
+                            logSystem(`[تحدث مباشر] إرسال تكتيكي مشفر عسكرياً (ACTIVE SCRAMBLER)...`, 'text-red-500 glow-red');
+                        }
+                    }, 180);
+                }
+            })
+            .catch(err => {
+                showToast("فشل تفعيل الميكروفون المباشر!");
+                isTransmittingVoice = false;
+            });
+        }
+
+        function stopVoiceTransmission() {
+            isTransmittingVoice = false;
+            
+            // إيقاف دفق المايك وإغلاقه
+            if (micStream) {
+                micStream.getTracks().forEach(track => track.stop());
+                micStream = null;
+            }
+
+            // تدمير فلاتر التشفير
+            if (scramblerOsc) {
+                scramblerOsc.stop();
+                scramblerOsc.disconnect();
+                scramblerOsc = null;
+            }
+
+            // إعادة تشغيل صوت التشويش الخلفي إذا كان نشطاً
+            if (staticGain && isStaticPlaying) {
+                staticGain.gain.setTargetAtTime(0.015, audioCtx.currentTime, 0.2);
+            }
+
+            playBeepTone(500, 0.08); // بيب إنهاء الإرسال (Roger Beep)
+            micAnalyser = null;
+            logSystem(`[اللاسلكي] تم إغلاق خط الإرسال (Over).`);
+        }
+
+        // --- 4. التحرير والتشفير النصي الفوري ---
+        function clearText() {
+            document.getElementById('normal-input').value = "";
+            autoProcessCrypto();
+        }
+
+        function autoProcessCrypto() {
+            const text = document.getElementById('normal-input').value.toLowerCase();
+            let numRes = ""; let morseRes = []; let idx = 1;
+            
+            for (let c of text) {
+                if (c === ' ' || c === '\n') { numRes += "000"; idx++; continue; }
+                if (arMap[c]) numRes += String(arMap[c] + idx).padStart(3, '0');
+                if (morseMap[c]) morseRes.push(morseMap[c]);
+                idx++;
+            }
+            document.getElementById('num-cipher-out').textContent = numRes || "000";
+            document.getElementById('morse-cipher-out').textContent = morseRes.join(' ') || "/";
+        }
+
+        // بث البيانات أوفلاين كترددات مسموعة (Data Over Sound)
+        function transmitDataOverSound() {
+            const morse = document.getElementById('morse-cipher-out').textContent;
+            if(!morse || morse === "/") return;
+            initAudio();
+            let offset = 0;
+            const pitch = 950; // تردد البث الإشاري
+
+            morse.split('').forEach(c => {
+                if(c === '.') { playBeepTone(pitch, 0.09, offset); offset += 0.18; }
+                else if(c === '-') { playBeepTone(pitch, 0.27, offset); offset += 0.36; }
+                else if(c === ' ') { offset += 0.25; }
+            });
+            logSystem(`[بث البيانات] جاري بث الحزمة الصوتية المشفرة...`, 'text-cyan-400');
+        }
+
+        // إرسال حزمة رسالة لشبكة الميش
+        function sendMeshMessage() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if(!msg) return;
+
+            const mhz = document.getElementById('wave-input').value;
+            logSystem(`[أنت - ${mhz} MHz]: ${msg}`, "text-green-300");
+            input.value = "";
+            playBeepTone(1000, 0.04);
+
+            setTimeout(() => {
+                logSystem(`[عقدة ميش قريبة]: تم تمرير حزمة الرسالة المشفرة بنجاح.`, "text-zinc-500");
+                playBeepTone(600, 0.04);
+            }, 1800);
+        }
+
+        function logSystem(htmlText, colorClass = "text-green-600") {
+            const box = document.getElementById('chat-box');
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            const div = document.createElement('div');
+            div.className = `${colorClass} border-l-2 border-green-900 pl-2 ml-1`;
+            div.innerHTML = `<span class="text-zinc-600 text-[8px]">[${time}]</span> ${htmlText}`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.replace('opacity-0', 'opacity-100');
+            setTimeout(() => t.classList.replace('opacity-100', 'opacity-0'), 3000);
+        }
+
+        // ==========================================
+        // 🎨 رسم مرصد ذبذبات الراديو والميكروفون التفاعلي الحقيقي
+        // ==========================================
+        const canvas = document.getElementById('oscilloscope');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth - 16;
+            canvas.height = canvas.parentElement.clientHeight - 24;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let wavePhase = 0;
+        function drawOscilloscope() {
+            requestAnimationFrame(drawOscilloscope);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 1. رسم شبكة الرادار الخضراء الخلفية
+            ctx.strokeStyle = 'rgba(22, 163, 74, 0.08)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=25) { ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); }
+            for(let i=0; i<canvas.height; i+=12) { ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); }
+            ctx.stroke();
+
+            // 2. رسم موجة الذبذبات التفاعلية الحية
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#22c55e';
+            const midHeight = canvas.height / 2;
+
+            if (isTransmittingVoice && micAnalyser) {
+                // سحب الموجة من ذبذبات ميكروفون كلامك الحقيقي!
+                const bufferLength = micAnalyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                micAnalyser.getByteTimeDomainData(dataArray);
+
+                const sliceWidth = canvas.width / bufferLength;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = v * midHeight;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                    x += sliceWidth;
+                }
+            } else {
+                // رسم الموجة الجيبية الهادئة أو تشويش الراديو
+                for (let x = 0; x < canvas.width; x++) {
+                    const angle = (x / canvas.width) * Math.PI * 4 + wavePhase;
+                    const y = midHeight + Math.sin(angle) * (isStaticPlaying ? 8 : 1.5);
+                    if(x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                wavePhase += isStaticPlaying ? 0.25 : 0.04;
+            }
+            ctx.stroke();
+        }
+        drawOscilloscope();
+
+        // تفعيل العمل بدون اتصال (PWA Offline)
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                const CACHE = 'tactical-radio-sound-v1';
+                self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll([location.href]))));
+                self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+            `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            navigator.serviceWorker.register(URL.createObjectURL(blob));
+        }
+
+        // تشغيل الراديو تلقائياً عند البدء
+        setTimeout(() => toggleRadioStatic(), 600);
+    </script>
+</body>
+</html>
+
+```
